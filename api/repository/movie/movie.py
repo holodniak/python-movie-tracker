@@ -76,8 +76,8 @@ class MongoMovieRepository(MovieRepository):
         return None
 
     async def get_by_title(self, title: str) -> typing.List[Movie]:
-        return_value = typing.List[Movie] = []
-        documents_cursor = self._movies.find_many({"title": title})
+        return_value: typing.List[Movie] = []
+        documents_cursor = self._movies.find({"title": title})
         async for document in documents_cursor:
             return_value.append(
                 Movie(
@@ -90,11 +90,11 @@ class MongoMovieRepository(MovieRepository):
             )
         return return_value
 
-    async def update(self, movie_id: str, update_params: dict):
-        if "id" in update_params.keys():
+    async def update(self, movie_id: str, update_parameters: dict):
+        if "id" in update_parameters.keys():
             raise RepositoryException("can't updated movie id")
         result = await self._movies.update_one(
-            {"id": movie_id}, {"$set": update_params}
+            {"id": movie_id}, {"$set": update_parameters}
         )
         if result.modified_count == 0:
             raise RepositoryException(f"movie: {movie_id} not found")

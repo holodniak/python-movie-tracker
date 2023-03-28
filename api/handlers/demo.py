@@ -3,8 +3,7 @@ from pydantic import BaseModel
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 
-
-from api.responses.detail import DetailResponse
+from api.dto.movie import DetailResponse
 
 
 router = APIRouter(prefix="/api/v1/demo")

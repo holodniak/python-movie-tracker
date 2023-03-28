@@ -1,3 +1,4 @@
+import typing
 from pydantic import BaseModel, validator
 
 
@@ -24,3 +25,25 @@ class CreateMovieBody(BaseModel):
         if v < 1900:
             raise ValueError("release_year's must be greater than 1900.")
         return v
+
+
+class DetailResponse(BaseModel):
+    message: str
+
+
+class MovieCreatedResponse(BaseModel):
+    id: str
+
+
+class MovieResponse(MovieCreatedResponse):
+    title: str
+    description: str
+    release_year: int
+    watched: bool
+
+
+class MovieUpdateBody(BaseModel):
+    title: typing.Optional[str] = None
+    description: typing.Optional[str] = None
+    release_year: typing.Optional[int] = None
+    watched: typing.Optional[bool] = None
