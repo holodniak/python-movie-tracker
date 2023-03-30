@@ -5,7 +5,7 @@ from api.api import create_app
 
 def main():
     app = create_app()
-    uvicorn.run(app)
+    uvicorn.run(app, port=8080)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from api.handlers import movie_v1
+from api.handlers import movie_v1, responses_section
 
 
 def my_startup_event_handler():
@@ -13,7 +13,7 @@ def my_shutdown_event_handler():
 
 
 def create_app():
-    app = FastAPI(docs_url="/")
+    app = FastAPI(docs_url="/", redoc_url="/docs")
 
     app.add_middleware(
         CORSMiddleware,
@@ -26,6 +26,7 @@ def create_app():
     app.on_event("startup")(my_startup_event_handler)
     app.on_event("shutdown")(my_shutdown_event_handler)
 
+    app.include_router(responses_section.router)
     app.include_router(movie_v1.router)
 
     return app
