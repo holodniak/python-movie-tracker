@@ -1,8 +1,18 @@
+from collections import namedtuple
+import dataclasses
 from functools import lru_cache
-from http import HTTPStatus
 import typing
 import uuid
-from fastapi import APIRouter, Body, Depends, Path, Query, Response
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    HTTPException,
+    Header,
+    Path,
+    Query,
+    Response,
+)
 from api.dto.movie import (
     CreateMovieBody,
     DetailResponse,
@@ -15,12 +25,27 @@ from api.repository.movie.abstractions import MovieRepository, RepositoryExcepti
 from api.repository.movie.movie import MongoMovieRepository
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-
+from fastapi.security import (
+    HTTPBasicCredentials,
+    HTTPBasic,
+)
 
 from api.settings import Settings
 
+http_basic = HTTPBasic()
 
-router = APIRouter(prefix="/api/v1/movie", tags=["movies"])
+
+def basic_authentication(credentials: HTTPBasicCredentials = Depends(http_basic)):
+    if credentials.username == "Pedro" and credentials.password == "basic":
+        return
+    raise HTTPException(status_code=401, detail="invalid_credentials")
+
+
+router = APIRouter(
+    prefix="/api/v1/movie",
+    tags=["movies"],
+    dependencies=[Depends(basic_authentication)],
+)
 
 
 @lru_cache()
@@ -33,6 +58,19 @@ def movie_repository(settings: Settings = Depends(settings)):
         connection_string=settings.mongo_connection_string,
         database=settings.mongo_database_name,
     )
+
+
+def pagination_params(
+    skip: int = Query(0, title="Skip", description="The number of items to skip", ge=0),
+    limit: int = Query(
+        1000,
+        title="Limit",
+        description="The limit of number of items returned",
+        le=1000,
+    ),
+):
+    Pagination = namedtuple("Pagination", ["skip", "limit"])
+    return Pagination(skip=skip, limit=limit)
 
 
 @router.post("/", status_code=201, response_model=MovieCreatedResponse)
@@ -63,7 +101,8 @@ async def create_movie(
     },
 )
 async def get_movie_by_id(
-    movie_id: str, repo: MovieRepository = Depends(movie_repository)
+    movie_id: str,
+    repo: MovieRepository = Depends(movie_repository),
 ):
     movie = await repo.get_by_id(movie_id=movie_id)
 
@@ -82,9 +121,12 @@ async def get_movie_by_id(
 @router.get("/", response_model=typing.List[MovieResponse])
 async def get_movie_by_title(
     title: str = Query(..., title="Title", description="The title Movie", min_length=3),
+    pagination=Depends(pagination_params),
     repo: MovieRepository = Depends(movie_repository),
 ):
-    movies = await repo.get_by_title(title)
+    movies = await repo.get_by_title(
+        title, skip=pagination.skip, limit=pagination.limit
+    )
     movies_return_value = []
     for movie in movies:
         movies_return_value.append(

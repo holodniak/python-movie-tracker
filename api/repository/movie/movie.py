@@ -15,12 +15,16 @@ class MemoryMovieRepository(MovieRepository):
     async def get_by_id(self, movie_id: str) -> typing.Optional[Movie]:
         return self._storage.get(movie_id)
 
-    async def get_by_title(self, title: str) -> typing.List[Movie]:
+    async def get_by_title(
+        self, title: str, skip: int = 0, limit: int = 1000
+    ) -> typing.List[Movie]:
         return_value = []
         for _, value in self._storage.items():
             if title == value.title:
                 return_value.append(value)
-            return return_value
+        if limit == 0:
+            return return_value[skip]
+        return return_value[skip : skip + limit]
 
     async def update(self, movie_id: str, update_params: dict):
         movie = self._storage.get(movie_id)
@@ -75,9 +79,11 @@ class MongoMovieRepository(MovieRepository):
             )
         return None
 
-    async def get_by_title(self, title: str) -> typing.List[Movie]:
+    async def get_by_title(
+        self, title: str, skip: int = 0, limit: int = 0
+    ) -> typing.List[Movie]:
         return_value: typing.List[Movie] = []
-        documents_cursor = self._movies.find({"title": title})
+        documents_cursor = self._movies.find({"title": title}).skip(skip).limit(limit)
         async for document in documents_cursor:
             return_value.append(
                 Movie(
